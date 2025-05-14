@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSocket } from '../context/SocketProvider.jsx'
+import { useNavigate } from 'react-router-dom';
 
 function Lobby() {
 
@@ -7,6 +8,7 @@ function Lobby() {
     const [room, setRoom] = useState("")
 
     const socket = useSocket();
+    const navigate = useNavigate();
 
     // Use callback hook prevents unnecessary re-renders of components
     const handleSubmitForm = useCallback((e) => {
@@ -14,11 +16,18 @@ function Lobby() {
         socket.emit("room:join", { email, room });
     }, [email, room, socket])
 
+    const handleJoinRoom = useCallback((data) => {
+        const { email, room } = data
+        // Since till now user has entered the required data to join the room, we should route them to that room
+        navigate(`/room/${room}`);
+    }, [navigate])
+
     useEffect(() => {
-        socket.on("room:join", data => {
-            console.log("Data from BE: ",data)
-        })
-    }, [])
+        socket.on("room:join", handleJoinRoom);
+        return () => {
+            socket.off("room:join", handleJoinRoom)     // We did this to prevent multiple socket listeners
+        }
+    }, [socket, handleJoinRoom])
 
     return (
         <>
